@@ -33,14 +33,13 @@ public class FaceDetector {
 
     public FaceDetector() {
         nu.pattern.OpenCV.loadLocally();
-        initializeFaceDetection();
+        initializeFaceDetection(cascadePath);
         initializeCamera();
     }
 
-    private void initializeFaceDetection() {
+    private void initializeFaceDetection(String cascadePath) {
         try {
-            String cascadePath = "assets/haarcascade_frontalface_alt.xml"; //put haarcascade files here
-            faceDetector = new CascadeClassifier(cascadePath);
+            faceDetector = new CascadeClassifier(cascadePath); //changed to accept
         } catch (Exception e) {
             System.err.println("Failed to initialize face detection: " + e.getMessage());
         }
