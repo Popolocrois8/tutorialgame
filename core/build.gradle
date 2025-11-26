@@ -1,0 +1,26 @@
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+eclipse.project.name = appName + '-core'
+
+repositories {
+  mavenCentral()
+  maven { url 'https://google.bintray.com/mediapipe' }  // MediaPipe repo
+}
+
+dependencies {
+  api "com.badlogicgames.gdx:gdx-box2d:$gdxVersion"
+  api "com.badlogicgames.gdx:gdx:$gdxVersion"
+  api "com.github.tommyettinger:anim8-gdx:$anim8Version"
+
+  implementation "org.openpnp:opencv:4.9.0-0"
+  //implementation 'org.openpnp:opencv:4.7.0-0'
+
+  implementation 'com.google.code.gson:gson:2.13.2'
+
+  //implementation 'com.google.mediapipe:mediapipe-core:0.10.2'
+  //implementation 'com.google.mediapipe:mediapipe-hands:0.10.2'
+  //implementation 'com.google.mediapipe:mediapipe-framework:0.10.2'
+
+  if(enableGraalNative == 'true') {
+    implementation "io.github.berstanio:gdx-svmhelper-annotations:$graalHelperVersion"
+  }
+}
