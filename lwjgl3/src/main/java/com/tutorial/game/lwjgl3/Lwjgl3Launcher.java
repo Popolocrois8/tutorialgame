@@ -2,6 +2,7 @@ package com.tutorial.game.lwjgl3;
 
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
+import com.tutorial.game.MainGame;
 import com.tutorial.game.TutorialGame;
 
 /** Launches the desktop (LWJGL3) application. */
@@ -13,6 +14,7 @@ public class Lwjgl3Launcher {
 
     private static Lwjgl3Application createApplication() {
         return new Lwjgl3Application(new TutorialGame(), getDefaultConfiguration());
+        //return new Lwjgl3Application(new MainGame(), getDefaultConfiguration());
     }
 
     private static Lwjgl3ApplicationConfiguration getDefaultConfiguration() {
