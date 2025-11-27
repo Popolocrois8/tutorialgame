@@ -31,79 +31,98 @@ class HandTrackerServer:
         print(f"Hand tracking server started on {self.host}:{self.port}")
 
     def handle_client(self, client_socket):
-        cap = cv2.VideoCapture(0)
+        cap = None
+    try:
+        while self.running:
+            # First, try to receive frame dimensions from Java
+            try:
+                # Receive frame size info (you need to send this from Java)
+                size_data = client_socket.recv(16, socket.MSG_PEEK)
+                if not size_data:
+                    break
 
-        try:
-            while self.running:
+                # For now, use local camera as we're not actually receiving frames
+                if cap is None:
+                    cap = cv2.VideoCapture(0)
+
                 ret, frame = cap.read()
                 if not ret:
-                    break
+                    continue
 
-                # Flip and process frame
-                frame = cv2.flip(frame, 1)
-                rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            except socket.error:
+                # Fallback to local camera if no data from Java
+                if cap is None:
+                    cap = cv2.VideoCapture(0)
+                ret, frame = cap.read()
+                if not ret:
+                    continue
 
-                # MediaPipe processing
-                result = self.hands.process(rgb_frame)
+            # Flip and process frame
+            frame = cv2.flip(frame, 1)
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-                hand_data = {
-                    "landmarks": [],
-                    "gesture": "none",
-                    "index_tip": {"x": 0, "y": 0},
-                    "pinch": False
+            # MediaPipe processing
+            result = self.hands.process(rgb_frame)
+
+            hand_data = {
+                "landmarks": [],
+                "gesture": "none",
+                "index_tip": {"x": 0, "y": 0},
+                "pinch": False
+            }
+
+            if result.multi_hand_landmarks:
+                landmarks = result.multi_hand_landmarks[0].landmark
+
+                # Convert landmarks to pixel coordinates
+                h, w, _ = frame.shape
+                landmarks_px = []
+                for landmark in landmarks:
+                    landmarks_px.append({
+                        "x": landmark.x * w,
+                        "y": landmark.y * h
+                    })
+
+                hand_data["landmarks"] = landmarks_px
+
+                # Get index fingertip and thumb tip
+                index_tip = landmarks[8]
+                thumb_tip = landmarks[4]
+
+                hand_data["index_tip"] = {
+                    "x": index_tip.x * w,
+                    "y": index_tip.y * h
                 }
 
-                if result.multi_hand_landmarks:
-                    landmarks = result.multi_hand_landmarks[0].landmark
+                # Check for pinch gesture
+                distance = np.sqrt(
+                    (index_tip.x - thumb_tip.x)**2 +
+                    (index_tip.y - thumb_tip.y)**2
+                )
+                hand_data["pinch"] = distance < 0.05  # Pinch threshold
 
-                    # Convert landmarks to pixel coordinates
-                    h, w, _ = frame.shape
-                    landmarks_px = []
-                    for landmark in landmarks:
-                        landmarks_px.append({
-                            "x": landmark.x * w,
-                            "y": landmark.y * h
-                        })
+                # Simple gesture recognition
+                if hand_data["pinch"]:
+                    hand_data["gesture"] = "pinch"
+                else:
+                    hand_data["gesture"] = "open"
 
-                    hand_data["landmarks"] = landmarks_px
+            # Send data to Java client
+            data_str = json.dumps(hand_data)
+            try:
+                client_socket.send((data_str + '\n').encode())
+            except:
+                break
 
-                    # Get index fingertip and thumb tip
-                    index_tip = landmarks[8]
-                    thumb_tip = landmarks[4]
+            # Small delay to prevent overwhelming the connection
+            time.sleep(0.033)  # ~30 FPS
 
-                    hand_data["index_tip"] = {
-                        "x": index_tip.x * w,
-                        "y": index_tip.y * h
-                    }
-
-                    # Check for pinch gesture
-                    distance = np.sqrt(
-                        (index_tip.x - thumb_tip.x)**2 +
-                        (index_tip.y - thumb_tip.y)**2
-                    )
-                    hand_data["pinch"] = distance < 0.05  # Pinch threshold
-
-                    # Simple gesture recognition
-                    if hand_data["pinch"]:
-                        hand_data["gesture"] = "pinch"
-                    else:
-                        hand_data["gesture"] = "open"
-
-                # Send data to Java client
-                data_str = json.dumps(hand_data)
-                try:
-                    client_socket.send((data_str + '\n').encode())
-                except:
-                    break
-
-                # Small delay to prevent overwhelming the connection
-                time.sleep(0.033)  # ~30 FPS
-
-        except Exception as e:
-            print(f"Error in client handler: {e}")
-        finally:
+    except Exception as e:
+        print(f"Error in client handler: {e}")
+    finally:
+        if cap is not None:
             cap.release()
-            client_socket.close()
+        client_socket.close()
 
     def start(self):
         print("Waiting for Java client to connect...")

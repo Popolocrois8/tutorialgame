@@ -124,19 +124,22 @@ public class PythonHandTracker {
     }
 
     private void drawHandLandmarks(Mat frame, List<Landmark> landmarks) {
+        System.out.println("Drawing " + landmarks.size() + " landmarks");
+
         // Draw landmarks
         for (Landmark landmark : landmarks) {
             Point point = new Point(landmark.x, landmark.y);
+            System.out.println("Landmark at: " + point);
             Imgproc.circle(frame, point, 3, new Scalar(0, 255, 0), -1);
         }
 
         // Draw connections (simplified)
         int[][] connections = {
-            {0, 1}, {1, 2}, {2, 3}, {3, 4}, // thumb
-            {0, 5}, {5, 6}, {6, 7}, {7, 8}, // index
-            {0, 9}, {9, 10}, {10, 11}, {11, 12}, // middle
-            {0, 13}, {13, 14}, {14, 15}, {15, 16}, // ring
-            {0, 17}, {17, 18}, {18, 19}, {19, 20} // pinky
+            {0, 1}, {1, 2}, {2, 3}, {3, 4},
+            {0, 5}, {5, 6}, {6, 7}, {7, 8},
+            {0, 9}, {9, 10}, {10, 11}, {11, 12},
+            {0, 13}, {13, 14}, {14, 15}, {15, 16},
+            {0, 17}, {17, 18}, {18, 19}, {19, 20}
         };
 
         for (int[] connection : connections) {

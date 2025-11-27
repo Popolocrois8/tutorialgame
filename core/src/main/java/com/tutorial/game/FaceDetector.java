@@ -12,10 +12,12 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.opencv.highgui.HighGui;
 
+
 public class FaceDetector {
+
     private CascadeClassifier faceDetector;
     private VideoCapture camera;
-    private boolean cameraActive;
+    private boolean cameraActive; //here is private so cannot access in TutorialGame
 
     // Tracking state
     private Point targetPosition;
@@ -31,7 +33,7 @@ public class FaceDetector {
     private int projectilesHit = 0;
     private boolean wasHitThisFrame = false;
 
-    public FaceDetector() {
+    public FaceDetector(String cascadePath) { //this is a constructor
         nu.pattern.OpenCV.loadLocally();
         initializeFaceDetection(cascadePath);
         initializeCamera();
@@ -39,9 +41,15 @@ public class FaceDetector {
 
     private void initializeFaceDetection(String cascadePath) {
         try {
-            faceDetector = new CascadeClassifier(cascadePath); //changed to accept
+            faceDetector = new CascadeClassifier(cascadePath);
+            if (faceDetector.empty()) {
+                System.err.println("Failed to load cascade classifier from: " + cascadePath);
+            } else {
+                System.out.println("✅ Cascade classifier loaded successfully from: " + cascadePath);
+            }
         } catch (Exception e) {
             System.err.println("Failed to initialize face detection: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -298,6 +306,19 @@ public class FaceDetector {
     public int getProjectilesHit() { return projectilesHit; }
     public int getProjectilesDodged() { return projectilesDodged; }
 
+    public Mat getRawCameraFrame() {
+        if (camera == null || !camera.isOpened()) return null;
+
+        Mat frame = new Mat();
+        camera.read(frame);
+        if (!frame.empty()) {
+            Core.flip(frame, frame, 1); // Mirror
+            return frame;
+        }
+        frame.release();
+        return null;
+    }
+
     // Reset game state
     public void resetGame() {
         projectiles.clear();
@@ -315,7 +336,7 @@ public class FaceDetector {
 
     // Add this to the end of your FaceDetector.java file:
     public static void main(String[] args) {
-        FaceDetector detector = new FaceDetector();
+        FaceDetector detector = new FaceDetector("assets/haarcascade_frontalface_alt.xml");
 
         // Wait for camera to initialize
         try {
