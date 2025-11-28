@@ -11,6 +11,8 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.tutorial.game.MainGame;
 import com.tutorial.game.gameComponenets.gameObjects.Enemy;
+import com.tutorial.game.gameComponenets.gameObjects.Scroll;
+import com.tutorial.game.gameComponenets.gameObjects.ScrollCollected;
 
 import java.util.ArrayList;
 
@@ -20,23 +22,25 @@ public class GameScreen implements Screen {
     Texture arenaTxr;
     Texture playerTxr;
     Sprite playerSprite;
-    Texture scrollTxr;
 
     float enemyTimer;
-    float spellDropTimer;
+    float scrollSpawnTimer = 0.4f;
 
-    int enemyCount = 0;
     Array<Enemy> enemies;
+    Array<Scroll> scrolls;
+    Array<ScrollCollected> scrollsCollected;
+    final int MAX_SCROLLS = 2;
 
     public GameScreen(MainGame game) {
         this.game = game;
         arenaTxr = new Texture("arena.png");
         playerTxr = new Texture("player.png");
-        scrollTxr = new Texture("spell.png");
         playerSprite = new Sprite(playerTxr);
         playerSprite.setSize(2, 2);
         playerSprite.setPosition(15, 15);
         enemies = new Array<>();
+        scrolls =  new Array<>();
+        scrollsCollected = new Array<>();
         createEnemy();
     }
 
@@ -73,8 +77,6 @@ public class GameScreen implements Screen {
     }
 
     private void logic() {
-        float worldWidth = game.viewport.getWorldWidth();
-        float worldHeight = game.viewport.getWorldHeight();
         float playerWidth = playerSprite.getWidth();
         float playerHeight = playerSprite.getHeight();
         playerSprite.setX(MathUtils.clamp(playerSprite.getX(), 6, 26 - playerWidth));
@@ -85,15 +87,27 @@ public class GameScreen implements Screen {
         if (enemyTimer > 2f) {
             createEnemy();
         }
-
-        spellDropTimer += delta;
-        if (spellDropTimer > 1f) {
-            spellDropTimer = 0;
-            //createDroplet();
+        if (scrolls.size < MAX_SCROLLS) {
+            scrollSpawnTimer -= delta;
+        }
+        if (scrollSpawnTimer <= 0){
+            scrolls.add(new Scroll());
+            scrollSpawnTimer = 2f;
         }
 
         for (Enemy enemy : enemies){
             enemy.update();
+        }
+
+        for (int i = scrolls.size - 1; i >= 0; i--) {
+            Sprite scrollSprite = scrolls.get(i).getScrollSprite();
+            float scrollWidth = scrollSprite.getWidth();
+            float scrollHeight = scrollSprite.getHeight();
+
+            if (playerSprite.getX() + playerWidth >= scrollSprite.getX() && playerSprite.getX() <= scrollSprite.getX() + scrollWidth && playerSprite.getY() + playerHeight >= scrollSprite.getY() && playerSprite.getY() <= scrollSprite.getY() + scrollHeight && scrollsCollected.size < 4) {
+                scrolls.removeIndex(i);
+                scrollsCollected.add(new ScrollCollected());
+            }
         }
 
     }
@@ -108,19 +122,27 @@ public class GameScreen implements Screen {
         float worldHeight = game.viewport.getWorldHeight();
 
         game.batch.draw(arenaTxr, 0, 0, worldWidth, worldHeight);
-        playerSprite.draw(game.batch);
 
         for (Enemy enemy : enemies) {
             enemy.draw(game.batch);
         }
 
+        for (Scroll scroll : scrolls) {
+            scroll.draw(game.batch);
+        }
+
+        for (int i = scrollsCollected.size - 1; i >= 0; i--) {
+            scrollsCollected.get(i).draw(game.batch,i);
+        }
+
+        playerSprite.draw(game.batch);
+
         game.batch.end();
     }
 
     private void createEnemy() {
-        if (enemyCount <= 3) {
-            enemies.add(new Enemy(enemyCount));
-            enemyCount++;
+        if (enemies.size <= 3) {
+            enemies.add(new Enemy(enemies.size));
             enemyTimer = 0;
             System.out.println("ENEMY ADDED");
         }
