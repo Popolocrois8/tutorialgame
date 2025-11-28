@@ -5,12 +5,11 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.Array;
-import com.tutorial.game.MainGame;
 import com.tutorial.game.gameComponenets.screens.GameScreen;
 
 import static com.badlogic.gdx.math.MathUtils.random;
 
-public class IceAttack {
+public class EnemyAttack {
     Array<Sprite> attackSprites;
     float midX = 0.3f;
     float midY = 0.3f;
@@ -21,7 +20,7 @@ public class IceAttack {
     float speed = 0.1f;
     float harmlessCounter;
 
-    public IceAttack(GameScreen gs, float x, float y, String direction){
+    public EnemyAttack(GameScreen gs, float x, float y, String direction){
         harmlessCounter = 1;
         gameScreen=gs;
         this.direction=direction;
@@ -30,7 +29,7 @@ public class IceAttack {
         y += midY;
 
         for (int i = 0; i < 3; i++){
-            attackSprites.add(new Sprite(new Texture("ice_orb.png")));
+            attackSprites.add(new Sprite(new Texture("fire_swirl.png")));
             attackSprites.get(i).setSize(2, 2);
             attackSprites.get(i).setOrigin(1, 1);
         }

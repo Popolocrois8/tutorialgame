@@ -11,7 +11,7 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.tutorial.game.MainGame;
 import com.tutorial.game.gameComponenets.gameObjects.Enemy;
-import com.tutorial.game.gameComponenets.gameObjects.IceAttack;
+import com.tutorial.game.gameComponenets.gameObjects.EnemyAttack;
 import com.tutorial.game.gameComponenets.gameObjects.Scroll;
 import com.tutorial.game.gameComponenets.gameObjects.ScrollCollected;
 
@@ -30,7 +30,7 @@ public class GameScreen implements Screen {
     Array<Enemy> enemies;
     Array<Scroll> scrolls;
     Array<ScrollCollected> scrollsCollected;
-    Array<IceAttack> iceAttacks;
+    Array<EnemyAttack> enemyAttacks;
     final int MAX_SCROLLS = 2;
 
     public GameScreen(MainGame game) {
@@ -39,13 +39,13 @@ public class GameScreen implements Screen {
         playerTxr = new Texture("player.png");
         heartTxr = new Texture("heart.png");
         playerSprite = new Sprite(playerTxr);
-        playerSprite.setSize(2, 2);
+        playerSprite.setSize(2.4f, 2.4f);
         playerSprite.setPosition(15, 15);
         enemies = new Array<>();
         scrolls =  new Array<>();
         scrollsCollected = new Array<>();
         hearts = new Array<>();
-        iceAttacks = new Array<>();
+        enemyAttacks = new Array<>();
         createEnemy();
         setHearts();
     }
@@ -101,12 +101,12 @@ public class GameScreen implements Screen {
             scrollSpawnTimer = 2f;
         }
 
-        for (Enemy enemy : enemies){
-            enemy.update(this);
+        for (EnemyAttack enemyAttack : enemyAttacks){
+            enemyAttack.update();
         }
 
-        for (IceAttack iceAttack : iceAttacks){
-            iceAttack.update();
+        for (Enemy enemy : enemies){
+            enemy.update(this);
         }
 
         for (int i = scrolls.size - 1; i >= 0; i--) {
@@ -137,12 +137,12 @@ public class GameScreen implements Screen {
             scroll.draw(game.batch);
         }
 
-        for (IceAttack iceAttack : iceAttacks) {
-            iceAttack.draw(game.batch);
-        }
-
         for (Enemy enemy : enemies) {
             enemy.draw(game.batch);
+        }
+
+        for (EnemyAttack enemyAttack : enemyAttacks) {
+            enemyAttack.draw(game.batch);
         }
 
         for (Sprite heart : hearts) {
@@ -185,13 +185,13 @@ public class GameScreen implements Screen {
     }
 
     public void addIceAttack(float x, float y, String direction){
-        iceAttacks.add(new IceAttack(this,x,y,direction));
+        enemyAttacks.add(new EnemyAttack(this,x,y,direction));
     }
 
-    public void removeIceAttack(IceAttack identity){
-        for (int i = iceAttacks.size - 1; i >= 0; i--) {
-            if (iceAttacks.get(i).equals(identity)) {
-                iceAttacks.removeIndex(i);
+    public void removeIceAttack(EnemyAttack identity){
+        for (int i = enemyAttacks.size - 1; i >= 0; i--) {
+            if (enemyAttacks.get(i).equals(identity)) {
+                enemyAttacks.removeIndex(i);
             }
         }
     }
