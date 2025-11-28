@@ -11,10 +11,9 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.tutorial.game.MainGame;
 import com.tutorial.game.gameComponenets.gameObjects.Enemy;
+import com.tutorial.game.gameComponenets.gameObjects.IceAttack;
 import com.tutorial.game.gameComponenets.gameObjects.Scroll;
 import com.tutorial.game.gameComponenets.gameObjects.ScrollCollected;
-
-import java.util.ArrayList;
 
 public class GameScreen implements Screen {
     final MainGame game;
@@ -22,26 +21,33 @@ public class GameScreen implements Screen {
     Texture arenaTxr;
     Texture playerTxr;
     Sprite playerSprite;
+    Texture heartTxr;
 
     float enemyTimer;
     float scrollSpawnTimer = 0.4f;
 
+    Array<Sprite> hearts;
     Array<Enemy> enemies;
     Array<Scroll> scrolls;
     Array<ScrollCollected> scrollsCollected;
+    Array<IceAttack> iceAttacks;
     final int MAX_SCROLLS = 2;
 
     public GameScreen(MainGame game) {
         this.game = game;
         arenaTxr = new Texture("arena.png");
         playerTxr = new Texture("player.png");
+        heartTxr = new Texture("heart.png");
         playerSprite = new Sprite(playerTxr);
         playerSprite.setSize(2, 2);
         playerSprite.setPosition(15, 15);
         enemies = new Array<>();
         scrolls =  new Array<>();
         scrollsCollected = new Array<>();
+        hearts = new Array<>();
+        iceAttacks = new Array<>();
         createEnemy();
+        setHearts();
     }
 
     @Override
@@ -96,7 +102,11 @@ public class GameScreen implements Screen {
         }
 
         for (Enemy enemy : enemies){
-            enemy.update();
+            enemy.update(this);
+        }
+
+        for (IceAttack iceAttack : iceAttacks){
+            iceAttack.update();
         }
 
         for (int i = scrolls.size - 1; i >= 0; i--) {
@@ -123,12 +133,20 @@ public class GameScreen implements Screen {
 
         game.batch.draw(arenaTxr, 0, 0, worldWidth, worldHeight);
 
+        for (Scroll scroll : scrolls) {
+            scroll.draw(game.batch);
+        }
+
+        for (IceAttack iceAttack : iceAttacks) {
+            iceAttack.draw(game.batch);
+        }
+
         for (Enemy enemy : enemies) {
             enemy.draw(game.batch);
         }
 
-        for (Scroll scroll : scrolls) {
-            scroll.draw(game.batch);
+        for (Sprite heart : hearts) {
+            heart.draw(game.batch);
         }
 
         for (int i = scrollsCollected.size - 1; i >= 0; i--) {
@@ -146,6 +164,40 @@ public class GameScreen implements Screen {
             enemyTimer = 0;
             System.out.println("ENEMY ADDED");
         }
+    }
+
+    public void takeDamage(){
+        hearts.pop();
+        if (hearts.size == 0) {
+            game.setScreen(new EndScreen(game));
+            dispose();
+        }
+    }
+
+    private void setHearts(){
+        for(int i = 0; i < 3; i++){
+            hearts.add(new Sprite(heartTxr));
+            hearts.get(i).setSize(5,5);
+        }
+        hearts.get(0).setPosition(33,1);
+        hearts.get(1).setPosition(33,7);
+        hearts.get(2).setPosition(33,13);
+    }
+
+    public void addIceAttack(float x, float y, String direction){
+        iceAttacks.add(new IceAttack(this,x,y,direction));
+    }
+
+    public void removeIceAttack(IceAttack identity){
+        for (int i = iceAttacks.size - 1; i >= 0; i--) {
+            if (iceAttacks.get(i).equals(identity)) {
+                iceAttacks.removeIndex(i);
+            }
+        }
+    }
+
+    public Sprite getPlayerSprite(){
+        return playerSprite;
     }
 
 
