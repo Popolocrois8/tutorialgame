@@ -3,14 +3,22 @@ package com.tutorial.game.gameComponenets.screens;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.tutorial.game.MainGame;
 
 public class StartScreen implements Screen {
     final MainGame game;
+    Sprite playerSprite;
 
     public StartScreen(final MainGame game) {
        this.game = game;
+       playerSprite = new Sprite(new Texture("player.png"));
+       playerSprite.setSize(16,16);
+       playerSprite.setOrigin(playerSprite.getWidth()/2,playerSprite.getHeight()/2);
+       playerSprite.setPosition(37,4);
+       playerSprite.setRotation(0);
     }
 
     @Override
@@ -29,6 +37,7 @@ public class StartScreen implements Screen {
         //draw text. Remember that x and y are in meters
         game.font.draw(game.batch, "Welcome to Drop!!! ", 1, 1.5f);
         game.font.draw(game.batch, "Tap anywhere to begin!", 1, 1);
+        playerSprite.draw(game.batch);
         game.batch.end();
 
         if (Gdx.input.isTouched()) {

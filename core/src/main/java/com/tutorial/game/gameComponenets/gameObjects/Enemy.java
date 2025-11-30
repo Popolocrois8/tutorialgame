@@ -59,7 +59,6 @@ public class Enemy {
         if (movementStopTimer == 0) {
             if (verticalWalking) {
                 if (goal <= enemySprite.getY() + speed / 2 && goal >= enemySprite.getY() - speed / 2) {
-                    System.out.println("Goal erreicht");
                     goal = newGoal();
                     speed = newSpeed();
                     movementStopTimer = 1f;
@@ -75,7 +74,6 @@ public class Enemy {
                 }
             }else{
                 if (goal <= enemySprite.getX() + speed / 2 && goal >= enemySprite.getX() - speed / 2) {
-                    System.out.println("Goal erreicht");
                     goal = newGoal();
                     speed = newSpeed();
                     movementStopTimer = 1.5f;

@@ -30,6 +30,10 @@ public class MainGame extends Game {
         super.render(); // important!
     }
 
+    public void resize(int width, int height) {
+        viewport.update(width, height, true); // true centers the camera
+    }
+
     public void dispose() {
         batch.dispose();
         font.dispose();

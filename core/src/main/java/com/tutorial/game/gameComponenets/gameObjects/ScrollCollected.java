@@ -3,19 +3,23 @@ package com.tutorial.game.gameComponenets.gameObjects;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.tutorial.game.gameComponenets.screens.GameScreen;
 
-public class ScrollCollected {
+public abstract class ScrollCollected {
     Texture scrollTxr;
     Texture pinTxt;
     Sprite scrollSprite;
     Sprite pinSprite;
-    public ScrollCollected() {
-        scrollTxr = new Texture("scroll.png");
+    GameScreen gs;
+
+    public ScrollCollected(GameScreen gs, String texturePath) {
+        scrollTxr = new Texture(texturePath);
         pinTxt = new Texture("pin.png");
         scrollSprite = new Sprite(scrollTxr);
         pinSprite = new Sprite(pinTxt);
         scrollSprite.setSize(6.5f, 6.5f);
         pinSprite.setSize(1, 1);
+        this.gs = gs;
     }
 
     public void draw(SpriteBatch batch, int i){
@@ -34,7 +38,20 @@ public class ScrollCollected {
                 break;
         }
         pinSprite.setPosition(scrollSprite.getX()+3.2f,scrollSprite.getY()+5.1f);
-        scrollSprite.draw(batch);
-        pinSprite.draw(batch);
+        if (gs.getMouseOnScroll() == this) {
+            scrollSprite.setSize(6.8f, 6.8f);
+            scrollSprite.draw(batch);
+        } else {
+            scrollSprite.setSize(6.5f, 6.5f);
+            scrollSprite.draw(batch);
+            pinSprite.draw(batch);
+        }
     }
+
+    public Sprite getScrollSprite() {
+        return scrollSprite;
+    }
+
+    public abstract String getAttackDirection();
+
 }
