@@ -104,4 +104,8 @@ public class Enemy {
     private float newSpeed(){
         return (float) (0.03 + Math.random() * 0.02);
     }
+
+    public Sprite getSprite(){
+        return enemySprite;
+    }
 }

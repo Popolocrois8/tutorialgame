@@ -30,6 +30,8 @@ public class GameScreen implements Screen {
     Texture heartTxr;
 
     float enemyTimer;
+    // TODO evtl hier mit der Zeit abaenderbar
+    float enemySpawnTime = 3f;
     float scrollSpawnTimer = 0.4f;
     float attackDurationTimer;
     final float MAX_attackDurationTimer = 2f;
@@ -170,7 +172,7 @@ public class GameScreen implements Screen {
         float delta = Gdx.graphics.getDeltaTime();
 
         enemyTimer += delta;
-        if (enemyTimer > 2f) {
+        if (enemyTimer > enemySpawnTime) {
             createEnemy();
         }
         if (scrolls.size < MAX_SCROLLS) {
@@ -337,6 +339,20 @@ public class GameScreen implements Screen {
             return true;
         }
         return false;
+    }
+
+    public Enemy[] getEnemies(){
+        return enemies;
+    }
+
+    public void removeEnemy(Enemy identity){
+        for (int i = enemies.length - 1; i >= 0; i--) {
+            if (enemies[i] == identity) {
+                enemies[i] = null;
+                enemyTimer = 0;
+                break;
+            }
+        }
     }
 
     @Override
