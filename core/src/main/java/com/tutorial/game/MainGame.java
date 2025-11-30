@@ -5,6 +5,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.tutorial.game.gameComponenets.screens.EndScreen;
 import com.tutorial.game.gameComponenets.screens.StartScreen;
 
 public class MainGame extends Game {
@@ -24,6 +25,7 @@ public class MainGame extends Game {
         font.getData().setScale(viewport.getWorldHeight() / Gdx.graphics.getHeight());
 
         this.setScreen(new StartScreen(this));
+        //this.setScreen(new EndScreen(this,24554.0917f));
     }
 
     public void render() {

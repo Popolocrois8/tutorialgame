@@ -17,7 +17,7 @@ public class EnemyAttack {
     float offsetCollective;
     String direction;
     GameScreen gameScreen;
-    float speed = 0.1f;
+    float speed = 0.08f;
     float harmlessCounter;
 
     public EnemyAttack(GameScreen gs, float x, float y, String direction){

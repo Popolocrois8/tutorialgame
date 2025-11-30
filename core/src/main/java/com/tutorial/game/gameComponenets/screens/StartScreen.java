@@ -11,13 +11,15 @@ import com.tutorial.game.MainGame;
 public class StartScreen implements Screen {
     final MainGame game;
     Sprite playerSprite;
+    Texture screen;
 
     public StartScreen(final MainGame game) {
        this.game = game;
+       screen = new Texture("startscreen.png");
        playerSprite = new Sprite(new Texture("player.png"));
        playerSprite.setSize(16,16);
        playerSprite.setOrigin(playerSprite.getWidth()/2,playerSprite.getHeight()/2);
-       playerSprite.setPosition(37,4);
+       playerSprite.setPosition(37.5f,3);
        playerSprite.setRotation(0);
     }
 
@@ -34,16 +36,14 @@ public class StartScreen implements Screen {
         game.batch.setProjectionMatrix(game.viewport.getCamera().combined);
 
         game.batch.begin();
+        game.batch.draw(screen,0,0, game.viewport.getWorldWidth(),game.viewport.getWorldHeight());
         //draw text. Remember that x and y are in meters
-        game.font.draw(game.batch, "Welcome to Drop!!! ", 1, 1.5f);
-        game.font.draw(game.batch, "Tap anywhere to begin!", 1, 1);
         playerSprite.draw(game.batch);
         game.batch.end();
 
         if (Gdx.input.isTouched()) {
             game.setScreen(new GameScreen(game));
             dispose();
-            System.out.println("Input erkannt");
         }
     }
 
