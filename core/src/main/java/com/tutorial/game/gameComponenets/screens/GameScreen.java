@@ -14,6 +14,7 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import com.tutorial.game.MainGame;
 import com.tutorial.game.gameComponenets.gameObjects.*;
 import com.tutorial.game.gameComponenets.utils.InputUtils;
+import com.tutorial.game.gameComponenets.controllers.HeadMovementController;
 
 import static com.badlogic.gdx.math.MathUtils.random;
 
@@ -49,6 +50,11 @@ public class GameScreen implements Screen {
 
     Texture pixel;
 
+    // Head movement controller
+    private HeadMovementController headController;
+    private boolean useHeadControl = false;
+    private Texture cameraTexture;
+
     public GameScreen(MainGame game) {
         this.game = game;
         arenaTxr = new Texture("arena.png");
@@ -77,6 +83,10 @@ public class GameScreen implements Screen {
         pixmap.fill();
         pixel = new Texture(pixmap);
         pixmap.dispose();
+
+        // Initialize head movement controller
+        headController = new HeadMovementController();
+        cameraTexture = new Texture(1, 1, Pixmap.Format.RGB888); // placeholder
 
     }
 
@@ -131,19 +141,51 @@ public class GameScreen implements Screen {
         float speed = 8f;
         float delta = Gdx.graphics.getDeltaTime();
 
-        //Later here the camera values will be used
-        if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
-            playerSprite.translateX(speed * delta);
-        }
-        else if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
-            playerSprite.translateX(-speed * delta);
+        // Toggle control methods with H key
+        if (Gdx.input.isKeyJustPressed(Input.Keys.H)) {
+            useHeadControl = !useHeadControl;
+            if (useHeadControl && headController.isHeadTrackingEnabled()) {
+                headController.recalibrate();
+                System.out.println("Head control ENABLED");
+            } else {
+                System.out.println("Keyboard control ENABLED");
+            }
         }
 
-        if (Gdx.input.isKeyPressed(Input.Keys.UP)) {
-            playerSprite.translateY(speed * delta);
+        // Toggle camera feed with C key
+        if (Gdx.input.isKeyJustPressed(Input.Keys.C)) {
+            headController.toggleCameraFeed();
         }
-        else if (Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
-            playerSprite.translateY(-speed * delta);
+
+        // Recalibrate head position with R key
+        if (Gdx.input.isKeyJustPressed(Input.Keys.R) && useHeadControl) {
+            headController.recalibrate();
+        }
+
+        if (useHeadControl && headController.isHeadTrackingEnabled() && !attackSeq) {
+            // Head movement control
+            headController.updateHeadPosition();
+            float headX = headController.getHorizontalMovement();
+            float headY = headController.getVerticalMovement();
+
+            playerSprite.translateX(headX * speed * delta);
+            playerSprite.translateY(headY * speed * delta);
+
+        } else {
+            // Original keyboard control (fallback)
+            if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
+                playerSprite.translateX(speed * delta);
+            }
+            else if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
+                playerSprite.translateX(-speed * delta);
+            }
+
+            if (Gdx.input.isKeyPressed(Input.Keys.UP)) {
+                playerSprite.translateY(speed * delta);
+            }
+            else if (Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
+                playerSprite.translateY(-speed * delta);
+            }
         }
 
         Vector2 mouseCoords = InputUtils.getMouseWorldCoords(game.viewport);
@@ -207,6 +249,14 @@ public class GameScreen implements Screen {
                 addNewScrollCollected();
             }
         }
+
+        // Update camera texture
+        if (headController.isHeadTrackingEnabled() && headController.isCameraFeedEnabled()) {
+            Texture newTexture = headController.getCameraTexture();
+            if (newTexture != null) {
+                cameraTexture = newTexture;
+            }
+        }
     }
 
     private void draw() {
@@ -248,8 +298,34 @@ public class GameScreen implements Screen {
 
         playerSprite.draw(game.batch);
 
+        // Draw camera feed
+        if (headController.isHeadTrackingEnabled() && headController.isCameraFeedEnabled() && cameraTexture != null && !attackSeq) {
+            // Draw in top-right corner, scaled down
+            float cameraWidth = 8f;
+            float cameraHeight = 6f;
+            float cameraX = worldWidth - cameraWidth - 1f;
+            float cameraY = worldHeight - cameraHeight - 1f;
+
+            game.batch.draw(cameraTexture, cameraX, cameraY, cameraWidth, cameraHeight);
+        }
+
         if(attackSeq) {
             drawWhenPaused();
+        }
+
+        // Draw control info
+        if (game.font != null && !attackSeq) {
+            float yPos = worldHeight - 20;
+            String controlMethod = useHeadControl ? "HEAD CONTROL" : "KEYBOARD CONTROL";
+            game.font.draw(game.batch, "Control: " + controlMethod, 10, yPos);
+            yPos -= 15;
+            game.font.draw(game.batch, "Press H: Toggle control", 10, yPos);
+            yPos -= 15;
+            game.font.draw(game.batch, "Press C: Toggle camera", 10, yPos);
+            if (useHeadControl) {
+                yPos -= 15;
+                game.font.draw(game.batch, "Press R: Recalibrate", 10, yPos);
+            }
         }
 
         game.batch.end();
@@ -377,6 +453,15 @@ public class GameScreen implements Screen {
 
     @Override
     public void dispose() {
-
+        arenaTxr.dispose();
+        playerTxr.dispose();
+        heartTxr.dispose();
+        pixel.dispose();
+        if (headController != null) {
+            headController.dispose();
+        }
+        if (cameraTexture != null) {
+            cameraTexture.dispose();
+        }
     }
 }

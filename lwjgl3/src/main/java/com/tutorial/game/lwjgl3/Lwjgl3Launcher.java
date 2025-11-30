@@ -13,8 +13,8 @@ public class Lwjgl3Launcher {
     }
 
     private static Lwjgl3Application createApplication() {
-        return new Lwjgl3Application(new TutorialGame(), getDefaultConfiguration());
-        //return new Lwjgl3Application(new MainGame(), getDefaultConfiguration());
+        //return new Lwjgl3Application(new TutorialGame(), getDefaultConfiguration());
+        return new Lwjgl3Application(new MainGame(), getDefaultConfiguration());
     }
 
     private static Lwjgl3ApplicationConfiguration getDefaultConfiguration() {
