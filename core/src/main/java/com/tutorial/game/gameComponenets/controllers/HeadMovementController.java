@@ -177,7 +177,7 @@ public class HeadMovementController {
         }
 
         // Map head X position (0 to cameraWidth) to game X (GAME_MIN_X to GAME_MAX_X)
-        double normalizedX = faceCenter.x / cameraWidth;
+        double normalizedX = 1 - (faceCenter.x / cameraWidth); //added an inversion to make it mirrored
         float gameX = GAME_MIN_X + (float)(normalizedX * (GAME_MAX_X - GAME_MIN_X));
 
         // Clamp to game boundaries
