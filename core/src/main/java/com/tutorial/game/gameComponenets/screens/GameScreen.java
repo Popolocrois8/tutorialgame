@@ -307,10 +307,10 @@ public class GameScreen implements Screen {
         // Draw camera feed
         if (headController.isHeadTrackingEnabled() && headController.isCameraFeedEnabled() && cameraTexture != null && !attackSeq) {
             // Draw in top-right corner, scaled down
-            float cameraWidth = 8f;
-            float cameraHeight = 6f;
-            float cameraX = worldWidth - cameraWidth - 1f;
-            float cameraY = worldHeight - cameraHeight - 1f;
+            float cameraWidth = 16f;
+            float cameraHeight = 16f; //make it fit in black square
+            float cameraX = worldWidth - cameraWidth - 2f;  //make it bottom right
+            float cameraY = 2f;
 
             game.batch.draw(cameraTexture, cameraX, cameraY, cameraWidth, cameraHeight);
         }

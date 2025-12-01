@@ -104,8 +104,8 @@ public class HeadMovementController {
         try {
             // Read frame from camera
             if (camera.read(currentFrame) && !currentFrame.empty()) {
-                // Convert to RGB for processing
-                Imgproc.cvtColor(currentFrame, rgbaFrame, Imgproc.COLOR_BGR2RGB);
+                //do NOT CONVERT TO  RGB
+                currentFrame.copyTo(rgbaFrame);
 
                 // Detect face (simplified for performance)
                 detectFaceSimple();
@@ -159,7 +159,7 @@ public class HeadMovementController {
                 double rectWidth = face.width * scaleX;
                 double rectHeight = face.height * scaleY;
 
-                Imgproc.rectangle(rgbaFrame,
+                Imgproc.rectangle(currentFrame,
                     new Point(rectX, rectY),
                     new Point(rectX + rectWidth, rectY + rectHeight),
                     new Scalar(0, 255, 0), 2);
@@ -203,7 +203,12 @@ public class HeadMovementController {
     private void updateCameraTexture() {
         if (rgbaFrame.empty()) return;
 
-        BufferedImage bufferedImage = matToBufferedImage(rgbaFrame);
+        // Create a mirrored version for display only
+        Mat mirroredFrame = new Mat();
+        Core.flip(rgbaFrame, mirroredFrame, 1);  // 1 = horizontal flip
+
+        BufferedImage bufferedImage = matToBufferedImage(mirroredFrame);
+        mirroredFrame.release();  // Clean up
 
         if (cameraTexture != null) {
             cameraTexture.dispose();
@@ -238,7 +243,7 @@ public class HeadMovementController {
                 int b = rgb & 0xFF;
 
                 pixmap.setColor(r / 255f, g / 255f, b / 255f, 1f);
-                pixmap.drawPixel(x, height - 1 - y);
+                pixmap.drawPixel(x,y);
             }
         }
 
