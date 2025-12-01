@@ -15,7 +15,7 @@ import com.tutorial.game.MainGame;
 import com.tutorial.game.gameComponenets.gameObjects.*;
 import com.tutorial.game.gameComponenets.utils.InputUtils;
 import com.tutorial.game.gameComponenets.controllers.HeadMovementController;
-import com.tutorial.game.gameComponenets.controllers.GestureSpellController;
+import com.tutorial.game.gameComponenets.controllers.TFLiteHandSignController;
 
 import static com.badlogic.gdx.math.MathUtils.random;
 
@@ -36,7 +36,7 @@ public class GameScreen implements Screen {
     float enemySpawnTime = 3f;
     float scrollSpawnTimer = 0.4f;
     float attackDurationTimer;
-    final float MAX_attackDurationTimer = 30f;
+    final float MAX_attackDurationTimer = 5f;
 
     Array<Sprite> hearts;
     Enemy[] enemies;
@@ -56,7 +56,8 @@ public class GameScreen implements Screen {
     private boolean useHeadControl = false;
     private Texture cameraTexture;
 
-    private GestureSpellController gestureController;
+    private TFLiteHandSignController handSignController;
+
 
     public GameScreen(MainGame game) {
         this.game = game;
@@ -90,7 +91,7 @@ public class GameScreen implements Screen {
         // Initialize head movement controller
         headController = new HeadMovementController();
         cameraTexture = new Texture(1, 1, Pixmap.Format.RGB888); // placeholder
-        gestureController = new GestureSpellController();
+        handSignController = new TFLiteHandSignController();
 
     }
 
@@ -113,33 +114,20 @@ public class GameScreen implements Screen {
     }
 
     private void inputWhenPaused() {
-        // Handle gesture input during attack sequence
-        if (gestureController != null && gestureController.isActive()) {
-            // Start drawing when mouse is pressed or space is held
-            if (Gdx.input.isButtonPressed(Input.Buttons.LEFT) || Gdx.input.isKeyPressed(Input.Keys.SPACE)) {
-                gestureController.startDrawing();
-            } else {
-                gestureController.stopDrawing();
+        // Hand sign detection happens automatically in update()
+        // Just check if we detected the correct sign
+        if (handSignController != null && handSignController.isActive()) {
+            String detectedDir = handSignController.getDetectedDirection();
 
-                // Check if we detected a valid direction
-                if (gestureController.hasDetectedDirection()) {
-                    String detectedDir = gestureController.getDetectedDirection();
-
-                    // Compare with required direction (tempAttackDirection)
-                    if (detectedDir.equals(tempAttackDirection)) {
-                        // Success! Cast the spell
-                        playerAttacks.add(new PlayerAttack(this, tempAttackDirection));
-                        pauseOrResumeGameForAttack();
-                        System.out.println("✓ Spell cast successfully: " + tempAttackDirection);
-                    } else {
-                        System.out.println("✗ Wrong shape! Expected: " + tempAttackDirection +
-                            ", Got: " + detectedDir);
-                    }
-                }
+            if (detectedDir != null && detectedDir.equals(tempAttackDirection)) {
+                // Success! Cast the spell
+                playerAttacks.add(new PlayerAttack(this, tempAttackDirection));
+                pauseOrResumeGameForAttack();
+                System.out.println("✓ Spell cast with hand sign: " + tempAttackDirection);
             }
 
-            // Update gesture controller
-            gestureController.update();
+            // Update hand sign controller
+            handSignController.update();
         }
     }
 
@@ -150,9 +138,9 @@ public class GameScreen implements Screen {
         if (attackDurationTimer > 0) {
             timerBarProgress = attackDurationTimer / MAX_attackDurationTimer;
 
-            // If gesture controller detected correct direction
-            if (gestureController != null && gestureController.hasDetectedDirection()) {
-                String detectedDir = gestureController.getDetectedDirection();
+            // If hand sign controller detected correct direction
+            if (handSignController != null && handSignController.hasDetectedDirection()) {
+                String detectedDir = handSignController.getDetectedDirection();
                 if (detectedDir.equals(tempAttackDirection)) {
                     playerAttacks.add(new PlayerAttack(this, tempAttackDirection));
                     pauseOrResumeGameForAttack();
@@ -165,9 +153,9 @@ public class GameScreen implements Screen {
 
         spritesForAttackSeq.get(1).setSize(20 * timerBarProgress, 4);
 
-        // Update gesture controller during attack sequence
-        if (gestureController != null && gestureController.isActive()) {
-            gestureController.update();
+        // Update hand sign controller during attack sequence
+        if (handSignController != null && handSignController.isActive()) {
+            handSignController.update();
         }
     }
 
@@ -176,8 +164,8 @@ public class GameScreen implements Screen {
         game.batch.draw(pixel, 0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         game.batch.setColor(1, 1, 1, 1);
 
-        // Draw gesture camera feed
-        if (gestureController != null && gestureController.isActive()) {
+        // Draw hand sign camera feed
+        if (handSignController != null && handSignController.isActive()) {
             float worldWidth = game.viewport.getWorldWidth();
             float worldHeight = game.viewport.getWorldHeight();
 
@@ -187,16 +175,23 @@ public class GameScreen implements Screen {
             float camX = (worldWidth - camWidth) / 2;
             float camY = (worldHeight - camHeight) / 2 + 5; // Slightly above center
 
-            gestureController.draw(game.batch, camX, camY, camWidth, camHeight);
+            handSignController.draw(game.batch, camX, camY, camWidth, camHeight);
 
             // Draw instructions
             if (game.font != null) {
-                game.font.draw(game.batch, "DRAW SHAPE IN AIR WITH YOUR HAND",
+                game.font.draw(game.batch, "SHOW HAND SIGN TO CAMERA",
                     camX, camY + camHeight + 15);
                 game.font.draw(game.batch, "Required: " + tempAttackDirection.toUpperCase(),
                     camX, camY + camHeight + 30);
-                game.font.draw(game.batch, String.format("Time: %.1fs", gestureController.getTimeRemaining()),
+                game.font.draw(game.batch, String.format("Time: %.1fs", handSignController.getTimeRemaining()),
                     camX, camY - 10);
+
+                // Show detected sign if any
+                String detectedSign = handSignController.getDetectedSign();
+                if (detectedSign != null) {
+                    game.font.draw(game.batch, "Detected: " + detectedSign,
+                        camX, camY + camHeight + 45);
+                }
             }
         }
 
@@ -484,17 +479,17 @@ public class GameScreen implements Screen {
         attackSeq = !attackSeq;
 
         if (attackSeq) {
-            // Starting attack sequence - pause head tracking, start gesture mode
+            // Starting attack sequence - pause head tracking, start hand sign mode
             if (headController != null) {
                 headController.pauseCamera(); // Pause head tracking camera
             }
-            if (gestureController != null) {
-                gestureController.startSpellCasting(tempAttackDirection);
+            if (handSignController != null) {
+                handSignController.startSpellCasting(tempAttackDirection);
             }
         } else {
-            // Ending attack sequence - stop gesture mode, resume head tracking
-            if (gestureController != null) {
-                gestureController.stopSpellCasting();
+            // Ending attack sequence - stop hand sign mode, resume head tracking
+            if (handSignController != null) {
+                handSignController.stopSpellCasting();
             }
             if (headController != null) {
                 headController.resumeCamera(); // Resume head tracking camera
@@ -557,8 +552,8 @@ public class GameScreen implements Screen {
             cameraTexture.dispose();
         }
 
-        if (gestureController != null) {
-            gestureController.dispose();
+        if (handSignController != null) {
+            handSignController.dispose();
         }
     }
 }
