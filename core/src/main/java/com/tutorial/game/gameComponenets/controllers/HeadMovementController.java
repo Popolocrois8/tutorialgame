@@ -9,6 +9,7 @@ import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
+import java.io.File;
 
 public class HeadMovementController {
     private VideoCapture camera;
@@ -43,9 +44,9 @@ public class HeadMovementController {
     private void initializeCamera() {
         try {
             // Load OpenCV DLL (use your existing working path)
-            String dllPath = "C:\\Users\\Aiman\\Documents\\Project\\tutorialgame\\libs\\opencv_java451.dll";
-            System.load(dllPath);
-            System.out.println("✅ Loaded OpenCV from: " + dllPath);
+            File dllFile = new File("libs\\opencv_java451.dll"); //use load instead of loadlibrary
+            System.load(dllFile.getAbsolutePath());
+            System.out.println("✅ Loaded OpenCV from: " + dllFile);
 
             // Initialize camera with low resolution for performance
             camera = new VideoCapture(0);
