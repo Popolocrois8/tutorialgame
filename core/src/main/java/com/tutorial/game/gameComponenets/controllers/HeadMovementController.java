@@ -3,12 +3,12 @@ package com.tutorial.game.gameComponenets.controllers;
 import org.opencv.core.*;
 import org.opencv.objdetect.CascadeClassifier;
 import org.opencv.videoio.VideoCapture;
+import org.opencv.videoio.Videoio;
 import org.opencv.imgproc.Imgproc;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
-import java.io.File;
 
 public class HeadMovementController {
     private VideoCapture camera;
@@ -16,131 +16,72 @@ public class HeadMovementController {
     private Mat currentFrame;
     private Mat rgbaFrame;
     private Point faceCenter;
-    private Point neutralPosition;
     private boolean isInitialized;
-    private final float movementSensitivity;
-    private final int movementThreshold;
 
     // For camera feed texture
     private Texture cameraTexture;
-    private boolean showCameraFeed = true;
+    private boolean showCameraFeed = false; // Disabled by default for performance
+
+    // Game world boundaries (adjust these to match your game)
+    private final float GAME_MIN_X = 6f;
+    private final float GAME_MAX_X = 26f;
+    private final float GAME_MIN_Y = 6f;
+    private final float GAME_MAX_Y = 26f;
+
+    // Performance optimization
+    private long lastProcessTime = 0;
+    private final long PROCESS_INTERVAL_MS = 100; // Process every 100ms (10 FPS)
+    private int cameraWidth = 640;
+    private int cameraHeight = 480;
 
     public HeadMovementController() {
-        this.movementSensitivity = 0.1f;
-        this.movementThreshold = 20;
         this.faceCenter = new Point(0, 0);
-        this.neutralPosition = new Point(0, 0);
         this.isInitialized = false;
         initializeCamera();
     }
 
     private void initializeCamera() {
         try {
-            System.out.println("=== Initializing Head Movement Controller ===");
-            System.out.println("Current working directory: " + System.getProperty("user.dir"));
+            // Load OpenCV DLL (use your existing working path)
+            String dllPath = "C:\\Users\\Aiman\\Documents\\Project\\tutorialgame\\libs\\opencv_java451.dll";
+            System.load(dllPath);
+            System.out.println("✅ Loaded OpenCV from: " + dllPath);
 
-            // Get the project root path (go up one level from assets)
-            String projectRoot = new File(System.getProperty("user.dir")).getParent();
-            if (projectRoot == null) {
-                projectRoot = System.getProperty("user.dir");
-            }
-            System.out.println("Project root: " + projectRoot);
-
-            // Try loading from different possible locations with correct paths
-            String[] possibleDllPaths = {
-                projectRoot + "\\libs\\opencv_java451.dll",  // Project root/libs folder
-                projectRoot + "\\opencv_java451.dll",        // Project root
-                "C:\\Users\\Aiman\\Documents\\Project\\tutorialgame\\libs\\opencv_java451.dll",  // Your exact path
-                System.getProperty("user.dir") + "\\..\\libs\\opencv_java451.dll",  // Go up from assets
-                System.getProperty("user.dir") + "\\..\\opencv_java451.dll",        // Go up from assets
-                "libs\\opencv_java451.dll",
-                "opencv_java451.dll"
-            };
-
-            boolean dllLoaded = false;
-            for (String dllPath : possibleDllPaths) {
-                try {
-                    System.out.println("Trying to load: " + dllPath);
-                    File dllFile = new File(dllPath);
-                    if (dllFile.exists()) {
-                        System.out.println("✅ DLL exists at: " + dllPath);
-                        System.load(dllPath);
-                        System.out.println("✅ SUCCESS: Loaded OpenCV from: " + dllPath);
-                        dllLoaded = true;
-                        break;
-                    } else {
-                        System.out.println("❌ DLL not found at: " + dllPath);
-                    }
-                } catch (UnsatisfiedLinkError e) {
-                    System.out.println("❌ Failed to load from: " + dllPath + " - " + e.getMessage());
-                }
-            }
-
-            if (!dllLoaded) {
-                System.err.println("❌ CRITICAL: Could not load OpenCV DLL from any location");
-
-                // Show what's actually in the libs folder
-                File libsFolder = new File(projectRoot + "\\libs");
-                if (libsFolder.exists()) {
-                    System.out.println("Contents of libs folder:");
-                    String[] libFiles = libsFolder.list();
-                    if (libFiles != null) {
-                        for (String file : libFiles) {
-                            System.out.println("  " + file);
-                        }
-                    }
-                } else {
-                    System.out.println("Libs folder does not exist: " + libsFolder.getAbsolutePath());
-                }
-                return;
-            }
-
-            // Rest of your initialization code...
-            System.out.println("OpenCV version: " + Core.VERSION);
-
+            // Initialize camera with low resolution for performance
             camera = new VideoCapture(0);
             if (!camera.isOpened()) {
                 System.err.println("❌ Camera not accessible");
                 return;
             }
-            System.out.println("✅ Camera opened successfully");
 
-            // Initialize face detector with correct paths
+            // Set low resolution for faster processing
+            camera.set(Videoio.CAP_PROP_FRAME_WIDTH, 640);
+            camera.set(Videoio.CAP_PROP_FRAME_HEIGHT, 480);
+            camera.set(Videoio.CAP_PROP_FPS, 15);
+
+            // Get actual camera dimensions
+            cameraWidth = (int) camera.get(Videoio.CAP_PROP_FRAME_WIDTH);
+            cameraHeight = (int) camera.get(Videoio.CAP_PROP_FRAME_HEIGHT);
+            System.out.println("✅ Camera: " + cameraWidth + "x" + cameraHeight + " @ 15 FPS");
+
+            // Initialize face detector
             faceDetector = new CascadeClassifier();
-            String[] cascadePaths = {
-                projectRoot + "\\assets\\haarcascade_frontalface_alt.xml",
-                projectRoot + "\\haarcascade_frontalface_alt.xml",
-                "haarcascade_frontalface_alt.xml",
-                "assets/haarcascade_frontalface_alt.xml"
-            };
-
-            boolean cascadeLoaded = false;
-            for (String path : cascadePaths) {
-                File cascadeFile = new File(path);
-                if (cascadeFile.exists()) {
-                    System.out.println("✅ Cascade file exists at: " + path);
-                    cascadeLoaded = faceDetector.load(path);
-                    if (cascadeLoaded) {
-                        System.out.println("✅ Loaded face detector from: " + path);
-                        break;
-                    }
-                } else {
-                    System.out.println("❌ Cascade file not found at: " + path);
-                }
-            }
-
+            boolean cascadeLoaded = faceDetector.load("haarcascade_frontalface_alt.xml");
             if (!cascadeLoaded) {
                 System.err.println("❌ Could not load face detector");
                 return;
             }
 
+            // Initialize frames
             currentFrame = new Mat();
             rgbaFrame = new Mat();
 
+            // Test camera
             if (camera.read(currentFrame) && !currentFrame.empty()) {
-                calibrateNeutralPosition();
                 isInitialized = true;
-                System.out.println("✅ Camera initialized: " + currentFrame.width() + "x" + currentFrame.height());
+                // Set initial face position to center
+                faceCenter = new Point(cameraWidth / 2.0, cameraHeight / 2.0);
+                System.out.println("✅ Head Movement Controller initialized");
             }
 
         } catch (Exception e) {
@@ -149,16 +90,15 @@ public class HeadMovementController {
         }
     }
 
-    private void calibrateNeutralPosition() {
-        if (currentFrame != null && !currentFrame.empty()) {
-            neutralPosition = new Point(currentFrame.width() / 2.0, currentFrame.height() / 2.0);
-            faceCenter = new Point(neutralPosition.x, neutralPosition.y);
-            System.out.println("Neutral position calibrated: " + neutralPosition);
-        }
-    }
-
     public void updateHeadPosition() {
         if (!isInitialized || camera == null) return;
+
+        // Performance: Limit processing rate
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastProcessTime < PROCESS_INTERVAL_MS) {
+            return; // Skip this frame
+        }
+        lastProcessTime = currentTime;
 
         try {
             // Read frame from camera
@@ -166,72 +106,104 @@ public class HeadMovementController {
                 // Convert to RGB for processing
                 Imgproc.cvtColor(currentFrame, rgbaFrame, Imgproc.COLOR_BGR2RGB);
 
-                // Detect faces
-                detectFace();
+                // Detect face (simplified for performance)
+                detectFaceSimple();
 
-                // Update camera texture for rendering
-                updateCameraTexture();
+                // Update camera texture only if feed is enabled
+                if (showCameraFeed) {
+                    updateCameraTexture();
+                }
             }
         } catch (Exception e) {
             System.err.println("Error updating head position: " + e.getMessage());
         }
     }
 
-    private void detectFace() {
+    private void detectFaceSimple() {
         MatOfRect faceDetections = new MatOfRect();
         Mat grayFrame = new Mat();
 
-        // Convert to grayscale for face detection
-        Imgproc.cvtColor(currentFrame, grayFrame, Imgproc.COLOR_BGR2GRAY);
+        // Use smaller frame for faster processing
+        Mat smallFrame = new Mat();
+        Imgproc.resize(currentFrame, smallFrame, new Size(320, 240));
+
+        // Convert to grayscale
+        Imgproc.cvtColor(smallFrame, grayFrame, Imgproc.COLOR_BGR2GRAY);
         Imgproc.equalizeHist(grayFrame, grayFrame);
 
-        // Detect faces
-        faceDetector.detectMultiScale(grayFrame, faceDetections);
+        // Fast face detection with minimal accuracy
+        faceDetector.detectMultiScale(grayFrame, faceDetections, 1.1, 2, 0,
+            new Size(50, 50), new Size(200, 200));
 
         Rect[] facesArray = faceDetections.toArray();
         if (facesArray.length > 0) {
-            // Use the largest face
+            // Use the first detected face
             Rect face = facesArray[0];
-            for (Rect f : facesArray) {
-                if (f.width * f.height > face.width * face.height) {
-                    face = f;
-                }
+
+            // Scale coordinates back to original camera size
+            double scaleX = (double) cameraWidth / smallFrame.width();
+            double scaleY = (double) cameraHeight / smallFrame.height();
+
+            // Calculate face center in camera coordinates
+            faceCenter = new Point(
+                (face.x + face.width / 2.0) * scaleX,
+                (face.y + face.height / 2.0) * scaleY
+            );
+
+            // Draw overlay only if camera feed is enabled
+            if (showCameraFeed) {
+                // Scale rectangle coordinates
+                double rectX = face.x * scaleX;
+                double rectY = face.y * scaleY;
+                double rectWidth = face.width * scaleX;
+                double rectHeight = face.height * scaleY;
+
+                Imgproc.rectangle(rgbaFrame,
+                    new Point(rectX, rectY),
+                    new Point(rectX + rectWidth, rectY + rectHeight),
+                    new Scalar(0, 255, 0), 2);
             }
-
-            // Calculate face center
-            faceCenter = new Point(face.x + face.width / 2.0, face.y + face.height / 2.0);
-
-            // Draw rectangle around face on the frame (for visualization)
-            Imgproc.rectangle(rgbaFrame,
-                new Point(face.x, face.y),
-                new Point(face.x + face.width, face.y + face.height),
-                new Scalar(0, 255, 0), 3);
-
-            // Draw crosshair at face center
-            Imgproc.line(rgbaFrame,
-                new Point(faceCenter.x - 10, faceCenter.y),
-                new Point(faceCenter.x + 10, faceCenter.y),
-                new Scalar(255, 0, 0), 2);
-            Imgproc.line(rgbaFrame,
-                new Point(faceCenter.x, faceCenter.y - 10),
-                new Point(faceCenter.x, faceCenter.y + 10),
-                new Scalar(255, 0, 0), 2);
-
-        } else {
-            // No face detected
-            faceCenter = new Point(neutralPosition.x, neutralPosition.y);
         }
+        // If no face detected, keep the last known position
 
         grayFrame.release();
+        smallFrame.release();
+    }
+
+    // Get absolute X position in game world (6 to 26)
+    public float getAbsoluteX() {
+        if (!isInitialized) {
+            return (GAME_MIN_X + GAME_MAX_X) / 2f; // Return center if not initialized
+        }
+
+        // Map head X position (0 to cameraWidth) to game X (GAME_MIN_X to GAME_MAX_X)
+        double normalizedX = faceCenter.x / cameraWidth;
+        float gameX = GAME_MIN_X + (float)(normalizedX * (GAME_MAX_X - GAME_MIN_X));
+
+        // Clamp to game boundaries
+        return Math.max(GAME_MIN_X, Math.min(GAME_MAX_X, gameX));
+    }
+
+    // Get absolute Y position in game world (6 to 26)
+    public float getAbsoluteY() {
+        if (!isInitialized) {
+            return (GAME_MIN_Y + GAME_MAX_Y) / 2f; // Return center if not initialized
+        }
+
+        // Map head Y position (0 to cameraHeight) to game Y (GAME_MIN_Y to GAME_MAX_Y)
+        // Note: Camera Y is top-down, game Y is bottom-up, so we invert
+        double invertedY = 1.0 - (faceCenter.y / cameraHeight);
+        float gameY = GAME_MIN_Y + (float)(invertedY * (GAME_MAX_Y - GAME_MIN_Y));
+
+        // Clamp to game boundaries
+        return Math.max(GAME_MIN_Y, Math.min(GAME_MAX_Y, gameY));
     }
 
     private void updateCameraTexture() {
         if (rgbaFrame.empty()) return;
 
-        // Convert OpenCV Mat to BufferedImage
         BufferedImage bufferedImage = matToBufferedImage(rgbaFrame);
 
-        // Convert to LibGDX Texture
         if (cameraTexture != null) {
             cameraTexture.dispose();
         }
@@ -240,7 +212,6 @@ public class HeadMovementController {
 
     private BufferedImage matToBufferedImage(Mat mat) {
         int type = BufferedImage.TYPE_3BYTE_BGR;
-
         int bufferSize = mat.channels() * mat.cols() * mat.rows();
         byte[] buffer = new byte[bufferSize];
         mat.get(0, 0, buffer);
@@ -266,61 +237,20 @@ public class HeadMovementController {
                 int b = rgb & 0xFF;
 
                 pixmap.setColor(r / 255f, g / 255f, b / 255f, 1f);
-                pixmap.drawPixel(x, height - 1 - y); // Flip Y coordinate
+                pixmap.drawPixel(x, height - 1 - y);
             }
         }
 
         return new Texture(pixmap);
     }
 
-    public float getHorizontalMovement() {
-        if (!isInitialized || faceCenter == null || neutralPosition == null) {
-            return 0;
-        }
-
-        double deltaX = faceCenter.x - neutralPosition.x;
-
-        // Apply threshold to avoid jitter
-        if (Math.abs(deltaX) < movementThreshold) {
-            return 0;
-        }
-
-        // Normalize and apply sensitivity
-        float movement = (float) (deltaX / neutralPosition.x * movementSensitivity);
-        return Math.max(-1, Math.min(1, movement));
-    }
-
-    public float getVerticalMovement() {
-        if (!isInitialized || faceCenter == null || neutralPosition == null) {
-            return 0;
-        }
-
-        double deltaY = faceCenter.y - neutralPosition.y;
-
-        // Apply threshold to avoid jitter
-        if (Math.abs(deltaY) < movementThreshold) {
-            return 0;
-        }
-
-        // Normalize and apply sensitivity (invert Y for intuitive movement)
-        float movement = (float) (-deltaY / neutralPosition.y * movementSensitivity);
-        return Math.max(-1, Math.min(1, movement));
-    }
-
     public Texture getCameraTexture() {
         return cameraTexture;
     }
 
-    public Point getFaceCenter() {
-        return faceCenter;
-    }
-
-    public Point getNeutralPosition() {
-        return neutralPosition;
-    }
-
     public void toggleCameraFeed() {
         showCameraFeed = !showCameraFeed;
+        System.out.println("Camera feed: " + (showCameraFeed ? "ON" : "OFF"));
     }
 
     public boolean isCameraFeedEnabled() {
@@ -329,10 +259,6 @@ public class HeadMovementController {
 
     public boolean isHeadTrackingEnabled() {
         return isInitialized;
-    }
-
-    public void recalibrate() {
-        calibrateNeutralPosition();
     }
 
     public void dispose() {

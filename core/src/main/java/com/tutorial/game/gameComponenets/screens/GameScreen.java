@@ -138,15 +138,13 @@ public class GameScreen implements Screen {
     }
 
     private void input() {
-        float speed = 8f;
         float delta = Gdx.graphics.getDeltaTime();
 
         // Toggle control methods with H key
         if (Gdx.input.isKeyJustPressed(Input.Keys.H)) {
             useHeadControl = !useHeadControl;
             if (useHeadControl && headController.isHeadTrackingEnabled()) {
-                headController.recalibrate();
-                System.out.println("Head control ENABLED");
+                System.out.println("Head control ENABLED (Absolute Positioning)");
             } else {
                 System.out.println("Keyboard control ENABLED");
             }
@@ -157,22 +155,29 @@ public class GameScreen implements Screen {
             headController.toggleCameraFeed();
         }
 
-        // Recalibrate head position with R key
-        if (Gdx.input.isKeyJustPressed(Input.Keys.R) && useHeadControl) {
-            headController.recalibrate();
-        }
-
         if (useHeadControl && headController.isHeadTrackingEnabled() && !attackSeq) {
-            // Head movement control
+            // ABSOLUTE POSITIONING: Head position directly controls character position
             headController.updateHeadPosition();
-            float headX = headController.getHorizontalMovement();
-            float headY = headController.getVerticalMovement();
 
-            playerSprite.translateX(headX * speed * delta);
-            playerSprite.translateY(headY * speed * delta);
+            // Get absolute positions from head controller
+            float targetX = headController.getAbsoluteX();
+            float targetY = headController.getAbsoluteY();
+
+            // Smooth movement (optional - remove for instant teleport)
+            float currentX = playerSprite.getX();
+            float currentY = playerSprite.getY();
+            float lerpFactor = 0.3f; // Adjust for smoothing (0 = instant, 1 = very slow)
+
+            playerSprite.setX(currentX + (targetX - currentX) * lerpFactor);
+            playerSprite.setY(currentY + (targetY - currentY) * lerpFactor);
+
+            // For instant teleport (no smoothing), use:
+            // playerSprite.setX(targetX);
+            // playerSprite.setY(targetY);
 
         } else {
             // Original keyboard control (fallback)
+            float speed = 8f;
             if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
                 playerSprite.translateX(speed * delta);
             }
@@ -187,6 +192,7 @@ public class GameScreen implements Screen {
                 playerSprite.translateY(-speed * delta);
             }
         }
+
 
         Vector2 mouseCoords = InputUtils.getMouseWorldCoords(game.viewport);
         mouseOnScroll = null;
