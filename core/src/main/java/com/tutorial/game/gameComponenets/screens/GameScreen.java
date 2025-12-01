@@ -15,6 +15,7 @@ import com.tutorial.game.MainGame;
 import com.tutorial.game.gameComponenets.gameObjects.*;
 import com.tutorial.game.gameComponenets.utils.InputUtils;
 import com.tutorial.game.gameComponenets.controllers.HeadMovementController;
+import com.tutorial.game.gameComponenets.controllers.GestureSpellController;
 
 import static com.badlogic.gdx.math.MathUtils.random;
 
@@ -35,7 +36,7 @@ public class GameScreen implements Screen {
     float enemySpawnTime = 3f;
     float scrollSpawnTimer = 0.4f;
     float attackDurationTimer;
-    final float MAX_attackDurationTimer = 2f;
+    final float MAX_attackDurationTimer = 30f;
 
     Array<Sprite> hearts;
     Enemy[] enemies;
@@ -54,6 +55,8 @@ public class GameScreen implements Screen {
     private HeadMovementController headController;
     private boolean useHeadControl = false;
     private Texture cameraTexture;
+
+    private GestureSpellController gestureController;
 
     public GameScreen(MainGame game) {
         this.game = game;
@@ -87,6 +90,7 @@ public class GameScreen implements Screen {
         // Initialize head movement controller
         headController = new HeadMovementController();
         cameraTexture = new Texture(1, 1, Pixmap.Format.RGB888); // placeholder
+        gestureController = new GestureSpellController();
 
     }
 
@@ -109,29 +113,94 @@ public class GameScreen implements Screen {
     }
 
     private void inputWhenPaused() {
+        // Handle gesture input during attack sequence
+        if (gestureController != null && gestureController.isActive()) {
+            // Start drawing when mouse is pressed or space is held
+            if (Gdx.input.isButtonPressed(Input.Buttons.LEFT) || Gdx.input.isKeyPressed(Input.Keys.SPACE)) {
+                gestureController.startDrawing();
+            } else {
+                gestureController.stopDrawing();
 
+                // Check if we detected a valid direction
+                if (gestureController.hasDetectedDirection()) {
+                    String detectedDir = gestureController.getDetectedDirection();
+
+                    // Compare with required direction (tempAttackDirection)
+                    if (detectedDir.equals(tempAttackDirection)) {
+                        // Success! Cast the spell
+                        playerAttacks.add(new PlayerAttack(this, tempAttackDirection));
+                        pauseOrResumeGameForAttack();
+                        System.out.println("✓ Spell cast successfully: " + tempAttackDirection);
+                    } else {
+                        System.out.println("✗ Wrong shape! Expected: " + tempAttackDirection +
+                            ", Got: " + detectedDir);
+                    }
+                }
+            }
+
+            // Update gesture controller
+            gestureController.update();
+        }
     }
 
     private void logicWhenPaused() {
         attackDurationTimer -= Gdx.graphics.getDeltaTime();
         float timerBarProgress = 0;
-        if(attackDurationTimer > 0) {
+
+        if (attackDurationTimer > 0) {
             timerBarProgress = attackDurationTimer / MAX_attackDurationTimer;
-            if(attackSucceeded()){
-                playerAttacks.add(new PlayerAttack(this,tempAttackDirection));
-                pauseOrResumeGameForAttack();
+
+            // If gesture controller detected correct direction
+            if (gestureController != null && gestureController.hasDetectedDirection()) {
+                String detectedDir = gestureController.getDetectedDirection();
+                if (detectedDir.equals(tempAttackDirection)) {
+                    playerAttacks.add(new PlayerAttack(this, tempAttackDirection));
+                    pauseOrResumeGameForAttack();
+                }
             }
-        }else{
-            // TODO hier Failergergebnis einbauen falls was konkret passieren soll
+        } else {
+            // Time's up
             pauseOrResumeGameForAttack();
         }
-        spritesForAttackSeq.get(1).setSize(20*timerBarProgress,4);
+
+        spritesForAttackSeq.get(1).setSize(20 * timerBarProgress, 4);
+
+        // Update gesture controller during attack sequence
+        if (gestureController != null && gestureController.isActive()) {
+            gestureController.update();
+        }
     }
 
     private void drawWhenPaused() {
-        game.batch.setColor(0, 0, 0, 0.65f); // semi-transparent black
+        game.batch.setColor(0, 0, 0, 0.65f);
         game.batch.draw(pixel, 0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        game.batch.setColor(1, 1, 1, 1); // reset color
+        game.batch.setColor(1, 1, 1, 1);
+
+        // Draw gesture camera feed
+        if (gestureController != null && gestureController.isActive()) {
+            float worldWidth = game.viewport.getWorldWidth();
+            float worldHeight = game.viewport.getWorldHeight();
+
+            // Draw camera feed in center
+            float camWidth = 20f;
+            float camHeight = 15f;
+            float camX = (worldWidth - camWidth) / 2;
+            float camY = (worldHeight - camHeight) / 2 + 5; // Slightly above center
+
+            gestureController.draw(game.batch, camX, camY, camWidth, camHeight);
+
+            // Draw instructions
+            if (game.font != null) {
+                game.font.draw(game.batch, "DRAW SHAPE IN AIR WITH YOUR HAND",
+                    camX, camY + camHeight + 15);
+                game.font.draw(game.batch, "Required: " + tempAttackDirection.toUpperCase(),
+                    camX, camY + camHeight + 30);
+                game.font.draw(game.batch, String.format("Time: %.1fs", gestureController.getTimeRemaining()),
+                    camX, camY - 10);
+            }
+        }
+
+        // Draw timer overlay
         for (Sprite sprite : spritesForAttackSeq) {
             sprite.draw(game.batch);
         }
@@ -155,7 +224,8 @@ public class GameScreen implements Screen {
             headController.toggleCameraFeed();
         }
 
-        if (useHeadControl && headController.isHeadTrackingEnabled() && !attackSeq) {
+        // Only update head position if NOT in attack sequence
+        if (useHeadControl && headController.isHeadTrackingEnabled() && !attackSeq) { // REMOVED: && !isGestureModeActive
             // ABSOLUTE POSITIONING: Head position directly controls character position
             headController.updateHeadPosition();
 
@@ -175,7 +245,7 @@ public class GameScreen implements Screen {
             // playerSprite.setX(targetX);
             // playerSprite.setY(targetY);
 
-        } else {
+        } else if (!attackSeq) { // REMOVED: && !isGestureModeActive
             // Original keyboard control (fallback)
             float speed = 8f;
             if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
@@ -192,7 +262,6 @@ public class GameScreen implements Screen {
                 playerSprite.translateY(-speed * delta);
             }
         }
-
 
         Vector2 mouseCoords = InputUtils.getMouseWorldCoords(game.viewport);
         mouseOnScroll = null;
@@ -411,8 +480,26 @@ public class GameScreen implements Screen {
         return mouseOnScroll;
     }
 
-    public void pauseOrResumeGameForAttack(){
+    public void pauseOrResumeGameForAttack() {
         attackSeq = !attackSeq;
+
+        if (attackSeq) {
+            // Starting attack sequence - pause head tracking, start gesture mode
+            if (headController != null) {
+                headController.pauseCamera(); // Pause head tracking camera
+            }
+            if (gestureController != null) {
+                gestureController.startSpellCasting(tempAttackDirection);
+            }
+        } else {
+            // Ending attack sequence - stop gesture mode, resume head tracking
+            if (gestureController != null) {
+                gestureController.stopSpellCasting();
+            }
+            if (headController != null) {
+                headController.resumeCamera(); // Resume head tracking camera
+            }
+        }
     }
 
     private boolean attackSucceeded(){
@@ -468,6 +555,10 @@ public class GameScreen implements Screen {
         }
         if (cameraTexture != null) {
             cameraTexture.dispose();
+        }
+
+        if (gestureController != null) {
+            gestureController.dispose();
         }
     }
 }

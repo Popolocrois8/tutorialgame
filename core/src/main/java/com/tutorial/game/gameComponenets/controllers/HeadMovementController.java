@@ -267,6 +267,20 @@ public class HeadMovementController {
         return isInitialized;
     }
 
+    public void resumeCamera() {
+        if (camera == null || !camera.isOpened()) {
+            initializeCamera();
+            System.out.println("Head tracking camera resumed");
+        }
+    }
+
+    public void pauseCamera() {
+        if (camera != null && camera.isOpened()) {
+            camera.release();
+            System.out.println("Head tracking camera paused");
+        }
+    }
+
     public void dispose() {
         if (camera != null) {
             camera.release();
