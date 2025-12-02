@@ -12,10 +12,10 @@ public class EndScreen implements Screen {
     String gameTimeString;
     Texture screen;
 
-    public EndScreen(final MainGame game, float gameTime) {
+    public EndScreen(final MainGame game, float gameTime, int scoreAdd) {
         this.game = game;
         screen = new Texture("endscreen.png");
-        score = (int) (gameTime*100);
+        score = (int) (gameTime*100) + scoreAdd;
         gameTimeString = Integer.toString((int) Math.floor(gameTime/60))+"min "+Integer.toString((int) Math.floor(gameTime%60))+"s!";
     }
     @Override

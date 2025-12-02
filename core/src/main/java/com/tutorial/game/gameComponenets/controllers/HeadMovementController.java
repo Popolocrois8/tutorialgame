@@ -46,7 +46,7 @@ public class HeadMovementController {
             // Load OpenCV DLL (use your existing working path)
             File dllFile = new File("libs\\opencv_java451.dll"); //use load instead of loadlibrary
             System.load(dllFile.getAbsolutePath());
-            System.out.println("✅ Loaded OpenCV from: " + dllFile);
+            //System.out.println("✅ Loaded OpenCV from: " + dllFile);
 
             // Initialize camera with low resolution for performance
             camera = new VideoCapture(0);
@@ -181,6 +181,9 @@ public class HeadMovementController {
         double normalizedX = 1 - (faceCenter.x / cameraWidth); //added an inversion to make it mirrored
         float gameX = GAME_MIN_X + (float)(normalizedX * (GAME_MAX_X - GAME_MIN_X));
 
+        // Added to make it easier to get to the edges of the arena
+        gameX = 3f+((gameX - 6f)*1.2f);
+
         // Clamp to game boundaries
         return Math.max(GAME_MIN_X, Math.min(GAME_MAX_X, gameX));
     }
@@ -195,6 +198,9 @@ public class HeadMovementController {
         // Note: Camera Y is top-down, game Y is bottom-up, so we invert
         double invertedY = 1.0 - (faceCenter.y / cameraHeight);
         float gameY = GAME_MIN_Y + (float)(invertedY * (GAME_MAX_Y - GAME_MIN_Y));
+
+        // Added to make it easier to get to the edges of the arena
+        gameY = ((gameY - 6f)*1.4f);
 
         // Clamp to game boundaries
         return Math.max(GAME_MIN_Y, Math.min(GAME_MAX_Y, gameY));

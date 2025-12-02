@@ -22,6 +22,7 @@ import static com.badlogic.gdx.math.MathUtils.random;
 public class GameScreen implements Screen {
     final MainGame game;
     float survivalTime;
+    int scoreAdd;
 
     boolean attackSeq = false;
     String tempAttackDirection;
@@ -32,11 +33,9 @@ public class GameScreen implements Screen {
     Texture heartTxr;
 
     float enemyTimer;
-    // TODO evtl hier mit der Zeit abaenderbar
-    float enemySpawnTime = 3f;
-    float scrollSpawnTimer = 0.4f;
-    float attackDurationTimer;
-    final float MAX_attackDurationTimer = 15f;
+    float enemySpawnTime = 7f;
+    float MAX_scrollSpawnTimer = 9f;
+    float scrollSpawnTimer = 10f;
 
     Array<Sprite> hearts;
     Enemy[] enemies;
@@ -48,15 +47,16 @@ public class GameScreen implements Screen {
     Array<Sprite> spritesForAttackSeq;
 
     ScrollCollected mouseOnScroll = null;
+    ScrollCollected bigScroll = null;
 
     Texture pixel;
 
     // Head movement controller
-    private HeadMovementController headController;
-    private boolean useHeadControl = false;
+    private final HeadMovementController headController;
+    private boolean useHeadControl = true;
     private Texture cameraTexture;
 
-    private HandSignController handSignController;
+    private final HandSignController handSignController;
 
 
     public GameScreen(MainGame game) {
@@ -90,6 +90,7 @@ public class GameScreen implements Screen {
 
         // Initialize head movement controller
         headController = new HeadMovementController();
+        headController.toggleCameraFeed();
         cameraTexture = new Texture(1, 1, Pixmap.Format.RGB888); // placeholder
         handSignController = new HandSignController();
 
@@ -123,7 +124,6 @@ public class GameScreen implements Screen {
                 // Success! Cast the spell
                 playerAttacks.add(new PlayerAttack(this, tempAttackDirection));
                 pauseOrResumeGameForAttack();
-                System.out.println("✓ Spell cast with hand sign: " + tempAttackDirection);
             }
 
             // Update hand sign controller
@@ -132,11 +132,10 @@ public class GameScreen implements Screen {
     }
 
     private void logicWhenPaused() {
-        attackDurationTimer -= Gdx.graphics.getDeltaTime();
         float timerBarProgress = 0;
 
-        if (attackDurationTimer > 0) {
-            timerBarProgress = attackDurationTimer / MAX_attackDurationTimer;
+        if (handSignController.getTimeRemaining() > 0) {
+            timerBarProgress = handSignController.getTimeRemaining() / 15f;
 
             // If hand sign controller detected correct direction
             if (handSignController != null && handSignController.hasDetectedDirection()) {
@@ -179,20 +178,25 @@ public class GameScreen implements Screen {
 
             // Draw instructions
             if (game.font != null) {
-                game.font.draw(game.batch, "SHOW HAND SIGN TO CAMERA",
-                    camX, camY + camHeight + 15);
-                game.font.draw(game.batch, "Required: " + tempAttackDirection.toUpperCase(),
-                    camX, camY + camHeight + 30);
-                game.font.draw(game.batch, String.format("Time: %.1fs", handSignController.getTimeRemaining()),
-                    camX, camY - 10);
+//                game.font.draw(game.batch, "SHOW HAND SIGN TO CAMERA",
+//                    camX, camY + camHeight + 15);
+//                game.font.draw(game.batch, "Required: " + tempAttackDirection.toUpperCase(),
+//                    camX, camY + camHeight + 30);
+                game.font.draw(game.batch, String.format("Time remaining: %.1fs", handSignController.getTimeRemaining()),
+                    33.25f, 22.25f);
 
                 // Show detected sign if any
                 String detectedSign = handSignController.getDetectedSign();
-                if (detectedSign != null) {
-                    game.font.draw(game.batch, "Detected: " + detectedSign,
-                        camX, camY + camHeight + 45);
-                }
+//                if (detectedSign != null) {
+//                    game.font.draw(game.batch, "Detected: " + detectedSign,
+//                        camX, camY + camHeight + 45);
+//                }
             }
+        }
+
+        if (bigScroll != null){
+            Sprite spr = bigScroll.getScrollSprite();
+            spr.draw(game.batch);
         }
 
         // Draw timer overlay
@@ -207,11 +211,11 @@ public class GameScreen implements Screen {
         // Toggle control methods with H key
         if (Gdx.input.isKeyJustPressed(Input.Keys.H)) {
             useHeadControl = !useHeadControl;
-            if (useHeadControl && headController.isHeadTrackingEnabled()) {
-                System.out.println("Head control ENABLED (Absolute Positioning)");
-            } else {
-                System.out.println("Keyboard control ENABLED");
-            }
+//            if (useHeadControl && headController.isHeadTrackingEnabled()) {
+//                System.out.println("Head control ENABLED (Absolute Positioning)");
+//            } else {
+//                System.out.println("Keyboard control ENABLED");
+//            }
         }
 
         // Toggle camera feed with C key
@@ -231,7 +235,7 @@ public class GameScreen implements Screen {
             // Smooth movement (optional - remove for instant teleport)
             float currentX = playerSprite.getX();
             float currentY = playerSprite.getY();
-            float lerpFactor = 0.3f; // Adjust for smoothing (0 = instant, 1 = very slow)
+            float lerpFactor = 0.15f; // Adjust for smoothing (0 = instant, 1 = very slow)
 
             playerSprite.setX(currentX + (targetX - currentX) * lerpFactor);
             playerSprite.setY(currentY + (targetY - currentY) * lerpFactor);
@@ -265,10 +269,12 @@ public class GameScreen implements Screen {
             if(mouseCoords.x <= sspr.getX()+sspr.getWidth() && mouseCoords.x >= sspr.getX() && mouseCoords.y <= sspr.getY()+sspr.getWidth() && mouseCoords.y >= sspr.getY()){
                 mouseOnScroll = scroll;
                 if(Gdx.input.isTouched()){
-                    // TODO hier kann mit scroll.abstractMethod zwischen den AttackTypen unterschieden werden
                     tempAttackDirection = scroll.getAttackDirection();
+                    bigScroll = scroll;
                     scrollsCollected.removeValue(scroll,true);
-                    attackDurationTimer = MAX_attackDurationTimer;
+                    Sprite spr = bigScroll.getScrollSprite();
+                    spr.setSize(16,16);
+                    spr.setPosition(40,2);
                     pauseOrResumeGameForAttack();
                 }
                 break;
@@ -292,7 +298,7 @@ public class GameScreen implements Screen {
         }
         if (scrollSpawnTimer <= 0){
             scrolls.add(new Scroll());
-            scrollSpawnTimer = 2f;
+            scrollSpawnTimer = MAX_scrollSpawnTimer;
         }
 
         for (EnemyAttack enemyAttack : enemyAttacks){
@@ -384,19 +390,22 @@ public class GameScreen implements Screen {
         }
 
         // Draw control info
-        if (game.font != null && !attackSeq) {
-            float yPos = worldHeight - 20;
-            String controlMethod = useHeadControl ? "HEAD CONTROL" : "KEYBOARD CONTROL";
-            game.font.draw(game.batch, "Control: " + controlMethod, 10, yPos);
-            yPos -= 15;
-            game.font.draw(game.batch, "Press H: Toggle control", 10, yPos);
-            yPos -= 15;
-            game.font.draw(game.batch, "Press C: Toggle camera", 10, yPos);
-            if (useHeadControl) {
-                yPos -= 15;
-                game.font.draw(game.batch, "Press R: Recalibrate", 10, yPos);
-            }
-        }
+//        if (game.font != null && !attackSeq) {
+//            float yPos = worldHeight - 20;
+//            String controlMethod = useHeadControl ? "HEAD CONTROL" : "KEYBOARD CONTROL";
+//            game.font.draw(game.batch, "Control: " + controlMethod, 10, yPos);
+//            yPos -= 15;
+//            game.font.draw(game.batch, "Press H: Toggle control", 10, yPos);
+//            yPos -= 15;
+//            game.font.draw(game.batch, "Press C: Toggle camera", 10, yPos);
+//            if (useHeadControl) {
+//                yPos -= 15;
+//                game.font.draw(game.batch, "Press R: Recalibrate", 10, yPos);
+//            }
+//        }
+
+        int score = (int) (survivalTime*100) + scoreAdd;
+        game.font.draw(game.batch, "Score: "+score, 40f, 1.5f);
 
         game.batch.end();
     }
@@ -412,6 +421,7 @@ public class GameScreen implements Screen {
     }
 
     private void addNewScrollCollected() {
+        scoreAdd += 100;
         int scrollType = (int) (random()*4);
         switch (scrollType){
             case 0:
@@ -432,7 +442,7 @@ public class GameScreen implements Screen {
     public void takeDamage(){
         hearts.pop();
         if (hearts.size == 0) {
-            game.setScreen(new EndScreen(game, survivalTime));
+            game.setScreen(new EndScreen(game, survivalTime, scoreAdd));
             dispose();
         }
     }
@@ -499,14 +509,6 @@ public class GameScreen implements Screen {
         }
     }
 
-    private boolean attackSucceeded(){
-        // TODO hier logik einbauen wann Attack erfolgreich
-        if (Gdx.input.isKeyPressed(Input.Keys.SPACE)) {
-            return true;
-        }
-        return false;
-    }
-
     public Enemy[] getEnemies(){
         return enemies;
     }
@@ -516,6 +518,7 @@ public class GameScreen implements Screen {
             if (enemies[i] == identity) {
                 enemies[i] = null;
                 enemyTimer = 0;
+                scoreAdd += 300;
                 break;
             }
         }

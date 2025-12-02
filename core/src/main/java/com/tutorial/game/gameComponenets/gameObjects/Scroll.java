@@ -14,7 +14,7 @@ public class Scroll {
         scrollTxr = new Texture("scroll.png");
         scrollSprite = new Sprite(scrollTxr);
         scrollSprite.setSize(2f, 2f);
-        scrollSprite.setPosition(6+random()*(20-scrollSprite.getWidth()),6+random()*(20-scrollSprite.getHeight()));
+        scrollSprite.setPosition(8+random()*(18-scrollSprite.getWidth()),8+random()*(18-scrollSprite.getHeight()));
     }
 
     public void draw(SpriteBatch batch){

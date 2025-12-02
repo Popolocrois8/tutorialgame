@@ -4,7 +4,7 @@ import com.tutorial.game.gameComponenets.screens.GameScreen;
 
 public class ScrollCollectedTypUP extends ScrollCollected{
     public ScrollCollectedTypUP(GameScreen gs) {
-        super(gs, "scroll_a.png");
+        super(gs, "scroll_up.png");
     }
 
     @Override
