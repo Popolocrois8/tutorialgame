@@ -81,6 +81,7 @@ public class GameScreen implements Screen {
         spritesForAttackSeq.get(0).setPosition(0,0);
         spritesForAttackSeq.add(new Sprite(new Texture("timer_bar.png")));
         spritesForAttackSeq.get(1).setPosition(35,24);
+
         //createEnemy();
         setHearts();
 
@@ -187,8 +188,8 @@ public class GameScreen implements Screen {
                 game.font.draw(game.batch, String.format("Time remaining: %.1fs", handSignController.getTimeRemaining()),
                     33.25f, 22.25f);
 
-                // Show detected sign if any
-                String detectedSign = handSignController.getDetectedSign();
+//                //Show detected sign if any
+//                String detectedSign = handSignController.getDetectedSign();
 //                if (detectedSign != null) {
 //                    game.font.draw(game.batch, "Detected: " + detectedSign,
 //                        camX, camY + camHeight + 45);
@@ -438,16 +439,16 @@ public class GameScreen implements Screen {
         int scrollType = (int) (random()*4);
         switch (scrollType){
             case 0:
-                scrollsCollected.add(new ScrollCollectedTypUP(this));
+                scrollsCollected.add(new ScrollCollected(this,"up"));
                 break;
             case 1:
-                scrollsCollected.add(new ScrollCollectedTypRIGHT(this));
+                scrollsCollected.add(new ScrollCollected(this,"down"));
                 break;
             case 2:
-                scrollsCollected.add(new ScrollCollectedTypDOWN(this));
+                scrollsCollected.add(new ScrollCollected(this,"left"));
                 break;
             case 3:
-                scrollsCollected.add(new ScrollCollectedTypLEFT(this));
+                scrollsCollected.add(new ScrollCollected(this,"right"));
                 break;
         }
     }

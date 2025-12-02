@@ -62,7 +62,6 @@ public class Enemy {
                     goal = newGoal();
                     speed = newSpeed();
                     movementStopTimer = 1f;
-                    //Wahrscheinlichkeit zum Angreifen hier festlegen evtl mit Faktor der ueber zeit schwerer macht
                     if(random() <= summitPercentage) {
                         gs.addIceAttack(enemySprite.getX(), enemySprite.getY(), direction);
                     }
@@ -77,7 +76,6 @@ public class Enemy {
                     goal = newGoal();
                     speed = newSpeed();
                     movementStopTimer = 1.5f;
-                    //Wahrscheinlichkeit zum Angreifen hier festlegen evtl mit Faktor der ueber zeit schwerer macht
                     if(random() <= summitPercentage) {
                         gs.addIceAttack(enemySprite.getX(), enemySprite.getY(), direction);
                     }

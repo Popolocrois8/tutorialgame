@@ -5,15 +5,34 @@ import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.tutorial.game.gameComponenets.screens.GameScreen;
 
-public abstract class ScrollCollected {
+public class ScrollCollected {
     Texture scrollTxr;
     Texture pinTxt;
     Sprite scrollSprite;
     Sprite pinSprite;
     GameScreen gs;
 
-    public ScrollCollected(GameScreen gs, String texturePath) {
-        scrollTxr = new Texture(texturePath);
+    String attackDirection;
+
+    public ScrollCollected(GameScreen gs, String attackDirection) {
+        switch (attackDirection) {
+            case "up":
+                scrollTxr = new Texture("scroll_up.png");
+                break;
+            case "down":
+                scrollTxr = new Texture("scroll_down.png");
+                break;
+            case "left":
+                scrollTxr = new Texture("scroll_left.png");
+                break;
+            case "right":
+                scrollTxr = new Texture("scroll_right.png");
+                break;
+            default:
+                scrollTxr = new Texture("pin.png");
+                break;
+        }
+        this.attackDirection = attackDirection;
         pinTxt = new Texture("pin.png");
         scrollSprite = new Sprite(scrollTxr);
         pinSprite = new Sprite(pinTxt);
@@ -52,6 +71,8 @@ public abstract class ScrollCollected {
         return scrollSprite;
     }
 
-    public abstract String getAttackDirection();
+    public String getAttackDirection(){
+        return attackDirection;
+    }
 
 }

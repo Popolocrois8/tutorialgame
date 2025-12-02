@@ -133,6 +133,7 @@ public class EnemyAttack {
     }
 }
 
+// Old Enemy Attack with three instead of four fire swirls
 /*
 public class EnemyAttack {
     Array<Sprite> attackSprites;

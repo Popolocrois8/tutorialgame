@@ -16,6 +16,7 @@ public class MainGame extends Game {
     @Override
     public void create() {
         batch = new SpriteBatch();
+
         // use libGDX's default font
         font = new BitmapFont();
         viewport = new FitViewport(58, 32);
@@ -25,7 +26,6 @@ public class MainGame extends Game {
         font.getData().setScale(viewport.getWorldHeight() / Gdx.graphics.getHeight());
 
         this.setScreen(new StartScreen(this));
-        //this.setScreen(new EndScreen(this,24554.0917f));
     }
 
     public void render() {
