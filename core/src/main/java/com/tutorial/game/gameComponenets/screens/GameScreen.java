@@ -15,7 +15,7 @@ import com.tutorial.game.MainGame;
 import com.tutorial.game.gameComponenets.gameObjects.*;
 import com.tutorial.game.gameComponenets.utils.InputUtils;
 import com.tutorial.game.gameComponenets.controllers.HeadMovementController;
-import com.tutorial.game.gameComponenets.controllers.TFLiteHandSignController;
+import com.tutorial.game.gameComponenets.controllers.HandSignController;
 
 import static com.badlogic.gdx.math.MathUtils.random;
 
@@ -36,7 +36,7 @@ public class GameScreen implements Screen {
     float enemySpawnTime = 3f;
     float scrollSpawnTimer = 0.4f;
     float attackDurationTimer;
-    final float MAX_attackDurationTimer = 5f;
+    final float MAX_attackDurationTimer = 15f;
 
     Array<Sprite> hearts;
     Enemy[] enemies;
@@ -56,7 +56,7 @@ public class GameScreen implements Screen {
     private boolean useHeadControl = false;
     private Texture cameraTexture;
 
-    private TFLiteHandSignController handSignController;
+    private HandSignController handSignController;
 
 
     public GameScreen(MainGame game) {
@@ -91,7 +91,7 @@ public class GameScreen implements Screen {
         // Initialize head movement controller
         headController = new HeadMovementController();
         cameraTexture = new Texture(1, 1, Pixmap.Format.RGB888); // placeholder
-        handSignController = new TFLiteHandSignController();
+        handSignController = new HandSignController();
 
     }
 
@@ -479,20 +479,22 @@ public class GameScreen implements Screen {
         attackSeq = !attackSeq;
 
         if (attackSeq) {
-            // Starting attack sequence - pause head tracking, start hand sign mode
+            // 1. STOP Head Tracking (Release Camera)
             if (headController != null) {
-                headController.pauseCamera(); // Pause head tracking camera
+                headController.pauseCamera();
             }
+            // 2. START Hand Tracking (Python Grabs Camera)
             if (handSignController != null) {
                 handSignController.startSpellCasting(tempAttackDirection);
             }
         } else {
-            // Ending attack sequence - stop hand sign mode, resume head tracking
+            // 1. STOP Hand Tracking (Python Releases Camera)
             if (handSignController != null) {
                 handSignController.stopSpellCasting();
             }
+            // 2. RESUME Head Tracking (Java Grabs Camera)
             if (headController != null) {
-                headController.resumeCamera(); // Resume head tracking camera
+                headController.resumeCamera();
             }
         }
     }
