@@ -15,7 +15,7 @@ public class Enemy {
     Sprite enemySprite;
     boolean verticalWalking;
     float goal = newGoal();
-    float speed = (float) (0.04+Math.random()*0.02);
+    float speed = (float) (0.06+Math.random()*0.02);
     float movementStopTimer;
     String direction;
 
@@ -107,5 +107,9 @@ public class Enemy {
 
     public Sprite getSprite(){
         return enemySprite;
+    }
+
+    public void higherAttackPercentage(){
+        summitPercentage += 0.035f;
     }
 }

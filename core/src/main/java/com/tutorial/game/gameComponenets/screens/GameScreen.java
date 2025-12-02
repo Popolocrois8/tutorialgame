@@ -17,11 +17,13 @@ import com.tutorial.game.gameComponenets.utils.InputUtils;
 import com.tutorial.game.gameComponenets.controllers.HeadMovementController;
 import com.tutorial.game.gameComponenets.controllers.HandSignController;
 
+import static com.badlogic.gdx.math.MathUtils.E;
 import static com.badlogic.gdx.math.MathUtils.random;
 
 public class GameScreen implements Screen {
     final MainGame game;
     float survivalTime;
+    float difficultyUpTimer = 7f;
     int scoreAdd;
 
     boolean attackSeq = false;
@@ -288,6 +290,17 @@ public class GameScreen implements Screen {
         playerSprite.setX(MathUtils.clamp(playerSprite.getX(), 6, 26 - playerWidth));
         playerSprite.setY(MathUtils.clamp(playerSprite.getY(), 6, 26 - playerHeight));
         float delta = Gdx.graphics.getDeltaTime();
+
+        if (difficultyUpTimer < 0){
+            difficultyUpTimer = 7f;
+            for (Enemy enemy : enemies) {
+                if (enemy != null) {
+                    enemy.higherAttackPercentage();
+                }
+            }
+        } else {
+            difficultyUpTimer -= delta;
+        }
 
         enemyTimer += delta;
         if (enemyTimer > enemySpawnTime) {
